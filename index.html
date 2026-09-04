@@ -144,6 +144,8 @@ tailwind.config = {
       -webkit-backdrop-filter:none !important; backdrop-filter:none !important; filter:none !important}
     .print-plain table{border-collapse:collapse}
     .print-plain th,.print-plain td{border:1px solid #999 !important}
+    footer{background:#fff !important;border-top:1px solid #999 !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+    footer *{color:#000 !important;-webkit-text-fill-color:#000 !important;filter:none !important}
   }
 </style>
 </head>
@@ -267,6 +269,8 @@ tailwind.config = {
 
     <p class="text-center text-[10px] sm:text-xs text-slate-400 mt-6 pb-2 font-semibold tracking-wider">
       PMGC Point System · Placement (10/6/5/4/2/1) + 1 pt per Kill · Generated <span id="genAt"></span>
+      <br class="sm:hidden">
+      <span class="hidden sm:inline"> · </span>Copyright © 2026 <span class="text-gold font-bold">G.Turmunkh</span>
     </p>
   </div>
 </section>
