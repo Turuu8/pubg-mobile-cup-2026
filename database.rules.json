@@ -1,0 +1,28 @@
+{
+  "rules": {
+    "tournaments": {
+      "$tournamentId": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChildren(['teams'])",
+        "teams": { ".validate": "newData.hasChildren()" },
+        "results": {
+          "$match": {
+            "$team": {
+              "rank": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 6" },
+              "players": {
+                "$player": {
+                  "kills":  { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
+                  "damage": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99999" },
+                  "$other": { ".validate": false }
+                }
+              },
+              "$other": { ".validate": false }
+            }
+          }
+        },
+        "updated": { ".validate": "newData.isString()" }
+      }
+    }
+  }
+}

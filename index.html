@@ -5,15 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>DDAM CUP — PUBG Mobile Tournament Scoreboard</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://images.unsplash.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
 <script>
-/* NOTE: the custom color token is named `ink` (not `base`) on purpose —
-   naming it `base` would make Tailwind emit `.text-base` as a COLOR utility
-   and silently override `text-white` on any element sized with `sm:text-base`. */
 tailwind.config = {
   theme: {
     extend: {
@@ -39,117 +35,9 @@ tailwind.config = {
   }
 }
 </script>
-<style>
-  /* ==========================================================
-     BATTLEGROUND BACKDROP
-     Two fixed layers sit behind everything:
-       ::before → dark-gradient-over-photo (the arena)
-       ::after  → radial glows + tactical grid
-     Fixed layers (rather than background-attachment:fixed) keep
-     scrolling smooth on mobile Safari.
-     Swap the photo by editing --bg-photo below. Alternatives that
-     are verified to load and stay dark enough for white text:
-       photo-1470071459604-3b5ec3a7fe05  (misty highlands, Erangel-like)
-       photo-1519669556878-63bdad8a1a49  (masked figure at night)
-       photo-1560253023-3ec5d502959f     (LAN arena, two players)
-       photo-1511512578047-dfb367046420  (dark arcade control room)
-     ========================================================== */
-  :root{
-    --bg-photo: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=2400&q=80');
-  }
-  /* Only <html> may carry an opaque background here. An opaque background on
-     <body> paints AFTER negative-z-index children in the root stacking context,
-     which would hide the ::before backdrop layer entirely. */
-  html{background-color:#0f172a;}
-  body{background:transparent;font-family:'Rajdhani',sans-serif;-webkit-font-smoothing:antialiased;}
-
-  body::before{
-    content:'';position:fixed;inset:0;z-index:-2;
-    background:
-      linear-gradient(rgba(15,23,42,.85), rgba(15,23,42,.92)),
-      var(--bg-photo) center / cover no-repeat;
-    background-color:#0f172a;   /* fallback if the photo never loads */
-  }
-  body::after{
-    content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
-    background-image:
-      radial-gradient(1200px 520px at 50% -10%, rgba(245,158,11,.16), transparent 62%),
-      radial-gradient(900px 440px at 92% 4%,  rgba(34,211,238,.12), transparent 62%),
-      radial-gradient(700px 400px at 4% 96%,  rgba(245,158,11,.07), transparent 60%),
-      linear-gradient(rgba(36,53,79,.22) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(36,53,79,.22) 1px, transparent 1px);
-    background-size: auto, auto, auto, 46px 46px, 46px 46px;
-  }
-
-  ::-webkit-scrollbar{height:8px;width:8px}
-  ::-webkit-scrollbar-track{background:#0f172a}
-  ::-webkit-scrollbar-thumb{background:#24354f;border-radius:99px}
-  ::-webkit-scrollbar-thumb:hover{background:#f59e0b}
-
-  /* ---------- glass panels that float over the backdrop ---------- */
-  .glass{
-    background:rgba(17,28,51,.72);
-    -webkit-backdrop-filter:blur(14px) saturate(1.2);
-    backdrop-filter:blur(14px) saturate(1.2);
-    border:1px solid rgba(245,158,11,.22);
-    box-shadow:
-      0 0 0 1px rgba(245,158,11,.06),
-      0 22px 48px -26px rgba(0,0,0,.95),
-      inset 0 1px 0 rgba(255,255,255,.05);
-  }
-  .glass-2{ background:rgba(22,35,61,.72); }   /* table headers / inner strips */
-  .glow-gold{ border-color:rgba(245,158,11,.45); box-shadow:0 0 0 1px rgba(245,158,11,.14), 0 0 34px -12px rgba(245,158,11,.5), 0 22px 48px -26px rgba(0,0,0,.95); }
-  .glow-cyan{ border-color:rgba(34,211,238,.40); box-shadow:0 0 0 1px rgba(34,211,238,.12), 0 0 30px -12px rgba(34,211,238,.45), 0 22px 48px -26px rgba(0,0,0,.95); }
-
-  .clip-tag{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
-  .row-champ{background:linear-gradient(90deg, rgba(245,158,11,.24), rgba(245,158,11,.07) 45%, transparent);box-shadow:inset 3px 0 0 0 #f59e0b;}
-  .row-2{background:linear-gradient(90deg, rgba(203,213,225,.12), transparent 60%);box-shadow:inset 3px 0 0 0 #cbd5e1;}
-  .row-3{background:linear-gradient(90deg, rgba(180,83,9,.18), transparent 60%);box-shadow:inset 3px 0 0 0 #b45309;}
-
-  @keyframes shine{0%{background-position:-220% 0}100%{background-position:220% 0}}
-  .champ-name{
-    background:linear-gradient(100deg,#fde68a 10%,#f59e0b 30%,#fff7d6 46%,#f59e0b 62%,#fde68a 90%);
-    background-size:220% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
-    animation:shine 4.5s linear infinite;
-  }
-  @keyframes pulseGold{0%,100%{box-shadow:0 0 0 1px rgba(245,158,11,.45),0 0 30px -10px rgba(245,158,11,.55)}50%{box-shadow:0 0 0 1px rgba(245,158,11,.85),0 0 46px -8px rgba(245,158,11,.8)}}
-  .mvp-card{animation:pulseGold 3s ease-in-out infinite}
-  .ico{width:1em;height:1em;display:inline-block;vertical-align:-.14em;flex:none}
-  .ico-trophy{filter:drop-shadow(0 0 6px rgba(245,158,11,.55))}
-
-  /* ---------- export mode ----------
-     html2canvas cannot rasterize backdrop-filter or background-clip:text,
-     so freeze those into solid equivalents while the PNG is being drawn. */
-  .exporting .champ-name{background:none !important;-webkit-text-fill-color:#f59e0b !important;color:#f59e0b !important;animation:none !important}
-  .exporting .mvp-card{animation:none}
-  .exporting .glass{background:#111c33 !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
-  .exporting .glass-2{background:#16233d !important}
-
-  input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-  input[type=number]{-moz-appearance:textfield}
-  .tabbtn.active{background:#f59e0b;color:#0f172a;box-shadow:0 0 24px -6px rgba(245,158,11,.8)}
-  .toast-in{animation:tin .25s ease-out}
-  @keyframes tin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-
-  @media (prefers-reduced-motion: reduce){
-    .champ-name,.mvp-card,.toast-in{animation:none}
-  }
-
-  @media print{
-    body::before, body::after{display:none !important}
-    body{background:#fff}
-    .no-print{display:none !important}
-    .print-plain, .print-plain *{color:#000 !important;background:#fff !important;box-shadow:none !important;
-      -webkit-text-fill-color:#000 !important; animation:none !important; border-color:#999 !important;
-      -webkit-backdrop-filter:none !important; backdrop-filter:none !important; filter:none !important}
-    .print-plain table{border-collapse:collapse}
-    .print-plain th,.print-plain td{border:1px solid #999 !important}
-    footer{background:#fff !important;border-top:1px solid #999 !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
-    footer *{color:#000 !important;-webkit-text-fill-color:#000 !important;filter:none !important}
-  }
-</style>
 </head>
 <body class="min-h-screen text-slate-200">
+
 
 <!-- ============ HEADER ============ -->
 <header class="border-b border-gold/25 sticky top-0 z-40 bg-ink/75 backdrop-blur-xl shadow-[0_10px_30px_-18px_rgba(0,0,0,.9)]">
@@ -169,6 +57,7 @@ tailwind.config = {
       </h1>
       <p class="text-[9px] sm:text-xs uppercase tracking-[.2em] sm:tracking-[.25em] text-cyan/80 font-semibold mt-1 truncate">PUBG Mobile · Internal Tournament</p>
     </div>
+    <span id="syncBadge" class="no-print"></span>
     <nav class="flex gap-1 p-1 rounded-lg glass no-print">
       <button data-view="board" class="tabbtn active px-2.5 sm:px-5 py-2 rounded-md font-display text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest transition"><span class="sm:hidden">Board</span><span class="hidden sm:inline">Leaderboard</span></button>
       <button data-view="admin" class="tabbtn px-2.5 sm:px-5 py-2 rounded-md font-display text-[10px] sm:text-xs font-bold uppercase tracking-wider sm:tracking-widest transition text-slate-400 hover:text-white">Admin</button>
@@ -270,7 +159,7 @@ tailwind.config = {
     <p class="text-center text-[10px] sm:text-xs text-slate-400 mt-6 pb-2 font-semibold tracking-wider">
       PMGC Point System · Placement (10/6/5/4/2/1) + 1 pt per Kill · Generated <span id="genAt"></span>
       <br class="sm:hidden">
-      <span class="hidden sm:inline"> · </span>Copyright © 2026 <span class="text-gold font-bold">G.Turmunkh</span>
+      <span class="hidden sm:inline"> · </span>Copyright © 2026 <span class="text-gold font-bold">Ganbat Turmunkh</span>
     </p>
   </div>
 </section>
@@ -290,10 +179,17 @@ tailwind.config = {
           <span id="rankWarn" class="text-xs font-bold text-rose-400"></span>
         </div>
 
+        <div id="remoteNotice" class="hidden mb-4 rounded-xl border border-cyan/50 bg-cyan/10 px-4 py-3 flex items-center gap-3 flex-wrap">
+          <span class="w-2 h-2 rounded-full bg-cyan animate-pulse"></span>
+          <span class="text-sm font-bold text-cyan">Another organiser published new results while you were typing.</span>
+          <span class="text-xs text-slate-300 font-semibold">Your unsaved edits are kept until you save or reload.</span>
+          <button type="button" id="btnReload" class="ml-auto px-3 py-1.5 rounded-lg bg-cyan/20 border border-cyan/50 text-cyan font-display font-bold text-[10px] uppercase tracking-widest hover:bg-cyan/30 transition">Load latest</button>
+        </div>
+
         <div class="grid gap-4 xl:grid-cols-2" id="teamCards"></div>
 
         <div class="mt-5 flex flex-wrap gap-2">
-          <button type="submit" class="px-6 py-3 rounded-lg bg-gold text-ink font-display font-black text-xs uppercase tracking-widest hover:bg-gold2 transition shadow-gold">✓ Add / Update Match Result</button>
+          <button type="submit" id="btnSave" class="px-6 py-3 rounded-lg bg-gold text-ink font-display font-black text-xs uppercase tracking-widest hover:bg-gold2 transition shadow-gold">✓ Add / Update Match Result</button>
           <button type="button" id="btnClearMatch" class="px-5 py-3 rounded-lg glass font-display font-bold text-xs uppercase tracking-widest hover:border-rose-500 hover:text-rose-400 transition">Clear This Match</button>
         </div>
       </form>
@@ -322,555 +218,23 @@ tailwind.config = {
 
 </main>
 
+<!-- ============ FOOTER ============ -->
+<footer class="mt-6 border-t border-gold/20 bg-ink/70 backdrop-blur-xl">
+  <div class="max-w-7xl mx-auto px-4 py-7 text-center">
+    <p class="font-display font-bold text-xs sm:text-sm tracking-[.18em] text-slate-400">
+      Copyright © 2026 <span class="text-gold drop-shadow-[0_0_12px_rgba(245,158,11,.45)]">Ganbat Turmunkh</span>
+    </p>
+    <p class="text-[9px] sm:text-[10px] uppercase tracking-[.22em] text-slate-600 font-semibold mt-2.5 leading-relaxed">
+      DDAM CUP™ · PUBG MOBILE is a trademark of KRAFTON, Inc. · Unofficial internal tournament tool
+    </p>
+  </div>
+</footer>
+
 <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden">
   <div class="px-5 py-3 rounded-xl bg-panel2 border border-gold/50 shadow-gold font-display font-bold text-xs uppercase tracking-widest text-gold toast-in" id="toastMsg"></div>
 </div>
 
-<script>
-/* ============================================================
-   CONFIG
-============================================================ */
-const PLACEMENT   = {1:10, 2:6, 3:5, 4:4, 5:2, 6:1};
-const MAPS        = ['Sanhok', 'Livik', 'Erangel'];   // Match 1, 2, 3
-const NUM_MATCHES = 3;
-const NUM_TEAMS   = 6;
-const SQUAD_SIZE  = 4;
-const STORE_KEY   = 'ddam-cup-pubgm-v2';
 
-const TEAM_SEED = [
-  ['Team Alpha','ALP'], ['Team Bravo','BRV'], ['Team Charlie','CHR'],
-  ['Team Delta','DLT'], ['Team Echo','ECH'],  ['Team Foxtrot','FOX'],
-];
-
-/* ============================================================
-   INLINE SVG ICONS
-   Kept inline (no icon font, no remote asset) so they render
-   identically in the PNG export and in the printable view.
-============================================================ */
-const svg = (body, cls='ico') => `<svg class="${cls}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${body}</svg>`;
-
-const ICONS = {
-  trophy: cls => svg(`<path d="M5 3h14v1.4h3.2a.9.9 0 0 1 .9.9v1.4A4.9 4.9 0 0 1 18.2 12h-.9a6.1 6.1 0 0 1-4.3 3.8v2.1h3.3a1 1 0 0 1 1 1V21H6.7v-2.1a1 1 0 0 1 1-1H11v-2.1A6.1 6.1 0 0 1 6.7 12h-.9A4.9 4.9 0 0 1 .9 6.7V5.3a.9.9 0 0 1 .9-.9H5V3Zm0 3.2H2.7v.5a3.1 3.1 0 0 0 3 3.1A9.3 9.3 0 0 1 5 6.9v-.7Zm14 0v.7a9.3 9.3 0 0 1-.7 2.9 3.1 3.1 0 0 0 3-3.1v-.5H19Z"/>`, cls),
-  medal:  cls => svg(`<path d="M6.6 1.8H3.4l4.3 8.1 2.9-1.6-4-6.5Zm10.8 0h3.2l-4.3 8.1-2.9-1.6 4-6.5Z" opacity=".85"/><circle cx="12" cy="16.3" r="5.9"/><circle cx="12" cy="16.3" r="3.3" fill="#0f172a" opacity=".45"/>`, cls),
-  crown:  cls => svg(`<path d="M2.6 6.8 6.7 10.6 12 3.2l5.3 7.4 4.1-3.8L19.7 18H4.3L2.6 6.8Z"/><rect x="4.3" y="19.2" width="15.4" height="2.4" rx="1.1"/>`, cls),
-  skull:  cls => svg(`<path d="M12 2C7.3 2 3.6 5.5 3.6 9.9c0 2.5 1.2 4.5 3 5.8v2.6a1.4 1.4 0 0 0 1.4 1.4h1.3v1.1a1 1 0 0 0 1 1h3.4a1 1 0 0 0 1-1v-1.1H16a1.4 1.4 0 0 0 1.4-1.4v-2.6c1.8-1.3 3-3.3 3-5.8C20.4 5.5 16.7 2 12 2Zm-3.3 9.9a1.9 1.9 0 1 1 0-3.8 1.9 1.9 0 0 1 0 3.8Zm6.6 0a1.9 1.9 0 1 1 0-3.8 1.9 1.9 0 0 1 0 3.8Z"/>`, cls),
-  map:    cls => svg(`<path d="M8.6 2.3 2.9 4.5A1.4 1.4 0 0 0 2 5.8v14.3a.9.9 0 0 0 1.2.8l5.4-2.1 6.8 2.9 5.7-2.2a1.4 1.4 0 0 0 .9-1.3V3.9a.9.9 0 0 0-1.2-.8l-5.4 2.1-6.8-2.9Zm.4 2.4 6 2.6v12.1l-6-2.6V4.7Z"/>`, cls),
-  crate:  cls => svg(`<path d="M12 1.6C7.1 1.6 3 5 2.1 9.4h19.8C21 5 16.9 1.6 12 1.6Z"/><path d="M2.6 9.4 8 13.4M21.4 9.4 16 13.4M12 9.4v4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/><rect x="7.2" y="13.4" width="9.6" height="8.4" rx="1.3"/><path d="M12 13.4v8.4M7.2 17.6h9.6" stroke="#0f172a" stroke-width="1.5"/>`, cls),
-};
-
-/* Gold trophy for #1, silver / bronze medals for #2 and #3. */
-function rankMedal(rank){
-  if(rank === 1) return `<span class="text-gold ico-trophy" title="Champion">${ICONS.trophy('ico w-[1.15em] h-[1.15em]')}</span>`;
-  if(rank === 2) return `<span class="text-slate-300" title="2nd place">${ICONS.medal('ico')}</span>`;
-  if(rank === 3) return `<span class="text-amber-600" title="3rd place">${ICONS.medal('ico')}</span>`;
-  return '';
-}
-
-/* ============================================================
-   STATE
-   state = {
-     teams:   [{ id, name, tag, players:[{id,name} x4] }],
-     results: { 1:{ teamId:{ rank, players:{ playerId:{kills,damage} } } }, 2:{}, 3:{} },
-     updated: ISO string
-   }
-   A match key that is absent = that match has not been played.
-============================================================ */
-let state = load();
-let currentMatch = firstUnplayedMatch();
-let showAllPlayers = false;
-
-function blankState(){
-  return {
-    teams: TEAM_SEED.map(([name, tag], i) => ({
-      id: 't' + (i+1), name, tag,
-      players: Array.from({length: SQUAD_SIZE}, (_, p) => ({ id: `t${i+1}p${p+1}`, name: `${tag} Player ${p+1}` }))
-    })),
-    results: {}, updated: null
-  };
-}
-
-function load(){
-  try{
-    const raw = localStorage.getItem(STORE_KEY);
-    if(!raw) return blankState();
-    const s = JSON.parse(raw);
-    if(!s || !Array.isArray(s.teams) || s.teams.length !== NUM_TEAMS) return blankState();
-    if(s.teams.some(t => !Array.isArray(t.players) || t.players.length !== SQUAD_SIZE)) return blankState();
-    s.results = s.results || {};
-    return s;
-  }catch(e){ return blankState(); }
-}
-
-function save(){
-  state.updated = new Date().toISOString();
-  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
-  renderSavedAt();
-}
-
-function firstUnplayedMatch(){
-  for(let m=1; m<=NUM_MATCHES; m++) if(!state.results[m]) return m;
-  return 1;
-}
-
-const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const num = n => n.toLocaleString('en-US');
-const teamOf = pid => state.teams.find(t => t.players.some(p => p.id === pid));
-
-/* ============================================================
-   SCORING
-============================================================ */
-/* Team kills for one match = sum of that team's 4 player kills. */
-function matchTeamStats(matchNo, teamId){
-  const r = state.results[matchNo] && state.results[matchNo][teamId];
-  if(!r) return null;
-  let kills = 0, damage = 0;
-  for(const pid in r.players){ kills += r.players[pid].kills; damage += r.players[pid].damage; }
-  return { rank: r.rank, kills, damage, place: PLACEMENT[r.rank] || 0, points: (PLACEMENT[r.rank] || 0) + kills };
-}
-
-function computeStandings(){
-  const rows = state.teams.map(t => {
-    let mp=0, kills=0, damage=0, place=0, wwcd=0, bestRank=99;
-    for(let m=1; m<=NUM_MATCHES; m++){
-      const s = matchTeamStats(m, t.id);
-      if(!s) continue;
-      mp++; kills += s.kills; damage += s.damage; place += s.place;
-      if(s.rank === 1) wwcd++;
-      bestRank = Math.min(bestRank, s.rank);
-    }
-    return { team:t, mp, kills, damage, place, wwcd, bestRank, total: place + kills };
-  });
-
-  rows.sort((a,b) =>
-    b.total - a.total ||        // 1. total points
-    b.kills - a.kills ||        // 2. total kills
-    b.wwcd  - a.wwcd  ||        // 3. chicken dinners
-    a.bestRank - b.bestRank ||  // 4. best single placement
-    a.team.name.localeCompare(b.team.name)
-  );
-  rows.forEach((r,i) => r.rank = i+1);
-  return rows;
-}
-
-function computePlayers(){
-  const rows = [];
-  state.teams.forEach(t => t.players.forEach(p => {
-    let mp=0, kills=0, damage=0;
-    for(let m=1; m<=NUM_MATCHES; m++){
-      const r = state.results[m] && state.results[m][t.id];
-      if(!r || !r.players[p.id]) continue;
-      mp++; kills += r.players[p.id].kills; damage += r.players[p.id].damage;
-    }
-    rows.push({ player:p, team:t, mp, kills, damage });
-  }));
-
-  rows.sort((a,b) =>
-    b.kills - a.kills ||          // 1. total kills
-    b.damage - a.damage ||        // 2. total damage
-    a.player.name.localeCompare(b.player.name)
-  );
-  rows.forEach((r,i) => r.rank = i+1);
-  return rows;
-}
-
-/* ============================================================
-   RENDER — LEADERBOARD
-============================================================ */
-function renderSectionIcons(){
-  document.getElementById('iconStandings').innerHTML = ICONS.trophy('ico w-4 h-4');
-  document.getElementById('iconFrag').innerHTML      = ICONS.skull('ico w-4 h-4');
-  document.getElementById('iconMap').innerHTML       = ICONS.map('ico w-4 h-4');
-}
-
-function renderMapChips(){
-  document.getElementById('mapChips').innerHTML = MAPS.map((m,i)=>{
-    const played = !!state.results[i+1];
-    return `<div class="clip-tag px-3 sm:px-4 py-2 border ${played?'border-gold/60 bg-gold/15 shadow-[0_0_18px_-8px_rgba(245,158,11,.9)]':'border-line bg-ink/40'}">
-      <div class="text-[9px] uppercase tracking-[.2em] font-display font-bold ${played?'text-gold':'text-slate-500'}">Match ${i+1}</div>
-      <div class="text-xs sm:text-sm font-bold ${played?'text-white':'text-slate-500'}">${m}</div>
-    </div>`;
-  }).join('');
-}
-
-function renderStandings(){
-  const rows = computeStandings();
-  const anyPlayed = rows.some(r => r.mp > 0);
-
-  document.getElementById('standings').innerHTML = rows.map(r => {
-    const champ  = r.rank === 1 && anyPlayed;
-    const rowCls = !anyPlayed ? '' : r.rank===1 ? 'row-champ' : r.rank===2 ? 'row-2' : r.rank===3 ? 'row-3' : '';
-    const badge  = !anyPlayed ? 'bg-panel2 text-slate-500 border border-line'
-                 : r.rank===1 ? 'bg-gradient-to-br from-gold2 to-amber-600 text-ink shadow-[0_0_18px_-4px_rgba(245,158,11,.9)]'
-                 : r.rank===2 ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-ink'
-                 : r.rank===3 ? 'bg-gradient-to-br from-amber-600 to-amber-800 text-white'
-                 : 'bg-panel2 text-slate-400 border border-line';
-    return `<tr class="${rowCls} hover:bg-white/[.04] transition">
-      <td class="py-3.5 pl-4 pr-2"><span class="inline-grid place-items-center w-9 h-9 rounded-lg font-display font-black text-sm ${badge}">${r.rank}</span></td>
-      <td class="py-3.5 px-2">
-        <div class="flex items-center gap-2.5">
-          <span class="font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-ink/70 border border-line text-cyan">${esc(r.team.tag)}</span>
-          <span class="font-display font-bold text-sm sm:text-base whitespace-nowrap ${champ?'champ-name':'text-white'}">${esc(r.team.name)}</span>
-          ${anyPlayed ? rankMedal(r.rank) : ''}
-        </div>
-      </td>
-      <td class="py-3.5 px-2 text-center font-mono font-bold text-slate-400">${r.mp}</td>
-      <td class="py-3.5 px-2 text-center font-mono font-extrabold ${r.wwcd?'text-gold':'text-slate-600'}">${r.wwcd}</td>
-      <td class="py-3.5 px-2 text-center font-mono font-bold text-slate-300">${r.place}</td>
-      <td class="py-3.5 px-2 text-center font-mono font-extrabold ${r.kills?'text-cyan':'text-slate-600'}">${r.kills}</td>
-      <td class="py-3.5 px-2 text-center font-mono font-bold text-slate-400 hidden sm:table-cell">${num(r.damage)}</td>
-      <td class="py-3.5 pr-4 pl-2 text-right font-display font-black text-lg sm:text-xl ${champ?'text-gold':'text-white'}">${r.total}</td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('genAt').textContent = new Date().toLocaleString();
-}
-
-function renderMVP(){
-  const rows = computePlayers();
-  const played = rows.some(r => r.mp > 0);
-  const top = played ? rows[0] : null;
-
-  document.getElementById('mvpCard').innerHTML = top ? `
-    <div class="mvp-card h-full rounded-2xl border border-gold/50 bg-gradient-to-br from-gold/20 via-panel/80 to-ink/90 backdrop-blur-md p-5 flex flex-col justify-center text-center">
-      <div class="text-gold mx-auto mb-1.5 ico-trophy">${ICONS.crown('ico w-10 h-10')}</div>
-      <div class="text-[10px] uppercase tracking-[.3em] font-display font-black text-gold">Overall Tournament MVP</div>
-      <div class="font-display font-black text-xl sm:text-2xl mt-2 champ-name">${esc(top.player.name)}</div>
-      <div class="mt-1.5 flex items-center justify-center gap-2">
-        <span class="font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-ink/70 border border-line text-cyan">${esc(top.team.tag)}</span>
-        <span class="text-sm font-bold text-slate-300">${esc(top.team.name)}</span>
-      </div>
-      <div class="grid grid-cols-2 gap-2 mt-4">
-        <div class="rounded-xl bg-ink/70 border border-line py-2.5">
-          <div class="font-display font-black text-2xl text-cyan">${top.kills}</div>
-          <div class="text-[9px] uppercase tracking-[.2em] font-bold text-slate-500">Kills</div>
-        </div>
-        <div class="rounded-xl bg-ink/70 border border-line py-2.5">
-          <div class="font-display font-black text-2xl text-white">${num(top.damage)}</div>
-          <div class="text-[9px] uppercase tracking-[.2em] font-bold text-slate-500">Damage</div>
-        </div>
-      </div>
-    </div>` : `
-    <div class="h-full rounded-2xl border border-dashed border-line bg-ink/40 backdrop-blur-md p-6 grid place-items-center text-center">
-      <div>
-        <div class="text-slate-600 mx-auto mb-2">${ICONS.crown('ico w-9 h-9')}</div>
-        <div class="text-[10px] uppercase tracking-[.3em] font-display font-black text-slate-500">Tournament MVP</div>
-        <div class="text-sm text-slate-600 font-semibold mt-1">Awaiting first match</div>
-      </div>
-    </div>`;
-
-  const list = showAllPlayers ? rows : rows.slice(0, 10);
-  document.getElementById('mvpTable').innerHTML = list.map(r => {
-    const mvp = r.rank === 1 && played;
-    const chip = !played ? 'text-slate-600'
-               : r.rank===1 ? 'bg-gradient-to-br from-gold2 to-amber-600 text-ink'
-               : r.rank===2 ? 'bg-gradient-to-br from-slate-200 to-slate-400 text-ink'
-               : r.rank===3 ? 'bg-gradient-to-br from-amber-600 to-amber-800 text-white'
-               : 'text-slate-500';
-    const chipCls = (r.rank<=3 && played) ? `inline-grid place-items-center w-7 h-7 rounded-lg ${chip}` : `pl-1 ${chip}`;
-    return `<tr class="${mvp?'row-champ':''} hover:bg-white/[.04] transition">
-      <td class="py-2.5 pl-4 pr-2"><span class="font-display font-black text-xs ${chipCls}">${r.rank}</span></td>
-      <td class="py-2.5 px-2">
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="font-display font-bold text-sm ${mvp?'champ-name':'text-white'} whitespace-nowrap">${esc(r.player.name)}</span>
-          ${mvp ? `<span class="inline-flex items-center gap-1 text-[8px] uppercase tracking-[.15em] font-display font-black px-1.5 py-0.5 rounded bg-gradient-to-br from-gold2 to-amber-600 text-ink whitespace-nowrap shadow-[0_0_14px_-4px_rgba(245,158,11,.9)]">${ICONS.crown('ico w-3 h-3')} MVP</span>` : ''}
-        </div>
-      </td>
-      <td class="py-2.5 px-2">
-        <span class="font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-ink/70 border border-line text-cyan">${esc(r.team.tag)}</span>
-        <span class="text-xs font-semibold text-slate-400 ml-1 hidden sm:inline">${esc(r.team.name)}</span>
-      </td>
-      <td class="py-2.5 px-2 text-center font-mono font-bold text-slate-400 hidden sm:table-cell">${r.mp}</td>
-      <td class="py-2.5 px-2 text-center font-mono font-extrabold text-lg ${r.kills?'text-cyan':'text-slate-600'}">${r.kills}</td>
-      <td class="py-2.5 pr-4 pl-2 text-right font-mono font-bold ${mvp?'text-gold':'text-slate-300'}">${num(r.damage)}</td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('btnMore').textContent = showAllPlayers ? 'Show top 10' : `Show all ${rows.length}`;
-}
-
-function renderMatchCards(){
-  document.getElementById('matchCards').innerHTML = MAPS.map((map,i)=>{
-    const m = i+1;
-    if(!state.results[m]){
-      return `<div class="rounded-xl border border-dashed border-line bg-ink/40 backdrop-blur-md p-5 text-center">
-        <div class="font-display font-bold text-xs uppercase tracking-[.2em] text-slate-500">Match ${m} · ${map}</div>
-        <div class="text-sm text-slate-600 mt-2 font-semibold">Not played yet</div>
-      </div>`;
-    }
-    const list = state.teams.map(t => ({ t, ...matchTeamStats(m, t.id) })).sort((a,b) => a.rank - b.rank);
-    const best = state.teams.flatMap(t => t.players.map(p => {
-      const pr = state.results[m][t.id].players[p.id] || {kills:0,damage:0};
-      return { name:p.name, ...pr };
-    })).sort((a,b) => b.kills - a.kills || b.damage - a.damage)[0];
-
-    return `<div class="rounded-xl glass overflow-hidden">
-      <div class="px-4 py-3 glass-2 border-b border-gold/20 flex items-center justify-between">
-        <span class="font-display font-bold text-xs uppercase tracking-[.2em] text-white">Match ${m}</span>
-        <span class="font-display font-bold text-xs uppercase tracking-[.2em] text-gold">${map}</span>
-      </div>
-      <div class="divide-y divide-line/50">
-        ${list.map(x=>`<div class="flex items-center gap-2 px-4 py-2.5 text-sm ${x.rank===1?'bg-gold/10':''}">
-          <span class="w-6 font-mono font-extrabold ${x.rank===1?'text-gold':'text-slate-500'}">#${x.rank}</span>
-          <span class="flex-1 font-semibold truncate ${x.rank===1?'text-white':'text-slate-300'}">${esc(x.t.name)}</span>
-          ${x.rank===1 ? `<span class="text-gold">${ICONS.trophy('ico w-3.5 h-3.5')}</span>` : ''}
-          <span class="font-mono text-xs text-cyan font-bold">${x.kills}K</span>
-          <span class="font-mono text-xs font-extrabold text-white w-8 text-right">${x.points}</span>
-        </div>`).join('')}
-      </div>
-      ${best ? `<div class="px-4 py-2.5 bg-ink/60 border-t border-line/70 flex items-center gap-2 text-xs">
-        <span class="text-cyan">${ICONS.skull('ico w-3.5 h-3.5')}</span>
-        <span class="uppercase tracking-[.15em] font-display font-bold text-slate-500">Top Frag</span>
-        <span class="font-bold text-white truncate">${esc(best.name)}</span>
-        <span class="ml-auto font-mono font-extrabold text-cyan">${best.kills}K</span>
-        <span class="font-mono font-bold text-slate-400">${num(best.damage)}</span>
-      </div>` : ''}
-    </div>`;
-  }).join('');
-}
-
-function renderSavedAt(){
-  document.getElementById('savedAt').textContent =
-    state.updated ? 'Last updated: ' + new Date(state.updated).toLocaleString() : 'No results saved yet';
-}
-
-/* ============================================================
-   RENDER — ADMIN
-============================================================ */
-function renderMatchTabs(){
-  document.getElementById('matchTabs').innerHTML = MAPS.map((map,i)=>{
-    const m = i+1, on = m===currentMatch, played = !!state.results[m];
-    return `<button type="button" data-match="${m}" class="mtab clip-tag px-4 py-3 border text-left transition
-      ${on?'bg-gold text-ink border-gold shadow-gold':'bg-ink/50 border-line hover:border-cyan'}">
-      <div class="font-display font-black text-xs uppercase tracking-[.15em] ${on?'text-ink':'text-white'}">Match ${m}</div>
-      <div class="text-[11px] font-bold ${on?'text-ink/70':'text-slate-400'}">${map}${played?' · ✓ saved':''}</div>
-    </button>`;
-  }).join('');
-  document.querySelectorAll('.mtab').forEach(b => b.onclick = () => { currentMatch = +b.dataset.match; renderAdmin(); });
-  document.getElementById('curMatchLabel').textContent = `Match ${currentMatch} · ${MAPS[currentMatch-1]}`;
-}
-
-function renderTeamCards(){
-  const res = state.results[currentMatch] || {};
-  document.getElementById('teamCards').innerHTML = state.teams.map(t => {
-    const r = res[t.id] || { players:{} };
-    const rankOpts = [1,2,3,4,5,6].map(n => `<option value="${n}" ${r.rank==n?'selected':''}>#${n} — ${PLACEMENT[n]} pts</option>`).join('');
-    const playerRows = t.players.map(p => {
-      const pr = (r.players && r.players[p.id]) || {};
-      return `<div class="grid grid-cols-[1fr_64px_84px] gap-2 items-center" data-player="${p.id}">
-        <input type="text" value="${esc(p.name)}" maxlength="18" placeholder="Player name"
-          class="p-name bg-ink/60 border border-line rounded-lg px-2.5 py-2 text-sm font-bold text-white focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold min-w-0">
-        <input type="number" min="0" max="99" value="${pr.kills!=null?pr.kills:''}" placeholder="K"
-          class="p-kills bg-ink/60 border border-line rounded-lg px-2 py-2 text-sm font-mono font-bold text-cyan text-center focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan min-w-0">
-        <input type="number" min="0" max="99999" value="${pr.damage!=null?pr.damage:''}" placeholder="DMG"
-          class="p-dmg bg-ink/60 border border-line rounded-lg px-2 py-2 text-sm font-mono font-bold text-slate-200 text-center focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan min-w-0">
-      </div>`;
-    }).join('');
-
-    return `<div class="team-card rounded-2xl glass overflow-hidden" data-team="${t.id}">
-      <div class="px-4 py-3 glass-2 border-b border-gold/20 flex items-center gap-2.5 flex-wrap">
-        <span class="font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-ink/70 border border-line text-cyan">${esc(t.tag)}</span>
-        <span class="font-display font-bold text-sm text-white">${esc(t.name)}</span>
-        <select class="t-rank ml-auto bg-ink/70 border border-line rounded-lg px-2.5 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold">
-          <option value="">Rank —</option>${rankOpts}
-        </select>
-      </div>
-      <div class="px-4 pt-3 pb-2 grid grid-cols-[1fr_64px_84px] gap-2 text-[9px] uppercase tracking-[.18em] font-display font-bold text-slate-500">
-        <span>Player</span><span class="text-center">Kills</span><span class="text-center">Damage</span>
-      </div>
-      <div class="px-4 pb-3 space-y-2">${playerRows}</div>
-      <div class="px-4 py-2.5 bg-ink/60 border-t border-line/70 flex items-center gap-4 text-xs">
-        <span class="uppercase tracking-[.15em] font-display font-bold text-slate-500">Team Kills</span>
-        <span class="t-kills font-mono font-extrabold text-cyan text-base">0</span>
-        <span class="uppercase tracking-[.15em] font-display font-bold text-slate-500 ml-auto">Match Pts</span>
-        <span class="t-pts font-display font-black text-white text-base">—</span>
-      </div>
-    </div>`;
-  }).join('');
-
-  document.querySelectorAll('#teamCards input, #teamCards select')
-    .forEach(el => { el.addEventListener('input', updateLive); el.addEventListener('change', updateLive); });
-  updateLive();
-}
-
-/* Live team-kill aggregation + duplicate-rank check as the organizer types. */
-function updateLive(){
-  const counts = {};
-  document.querySelectorAll('#teamCards .team-card').forEach(card => {
-    const rank = card.querySelector('.t-rank').value;
-    if(rank) counts[rank] = (counts[rank] || 0) + 1;
-  });
-
-  let dup = false, blanks = 0;
-  document.querySelectorAll('#teamCards .team-card').forEach(card => {
-    const rank = card.querySelector('.t-rank').value;
-    let kills = 0;
-    card.querySelectorAll('[data-player]').forEach(row => {
-      kills += Math.max(0, parseInt(row.querySelector('.p-kills').value || 0, 10) || 0);
-    });
-    card.querySelector('.t-kills').textContent = kills;
-
-    const pts = card.querySelector('.t-pts');
-    if(!rank){ pts.textContent = '—'; pts.className = 't-pts font-display font-black text-slate-600 text-base'; blanks++; }
-    else{
-      pts.textContent = PLACEMENT[rank] + kills;
-      pts.className = 't-pts font-display font-black text-base ' + (rank==='1' ? 'text-gold' : 'text-white');
-    }
-    const isDup = rank && counts[rank] > 1;
-    if(isDup) dup = true;
-    card.querySelector('.t-rank').classList.toggle('border-rose-500', !!isDup);
-  });
-
-  document.getElementById('rankWarn').textContent =
-    dup ? '⚠ Duplicate rank positions' : (blanks && blanks < NUM_TEAMS ? '⚠ Some teams have no rank' : '');
-}
-
-function renderTeamEditor(){
-  document.getElementById('teamEditor').innerHTML = state.teams.map((t,i) => `
-    <div class="flex items-center gap-2">
-      <input value="${esc(t.tag)}" data-i="${i}" data-f="tag" maxlength="4"
-        class="tin w-14 bg-ink/60 border border-line rounded px-2 py-1.5 text-[11px] font-mono font-extrabold text-cyan uppercase focus:outline-none focus:border-cyan">
-      <input value="${esc(t.name)}" data-i="${i}" data-f="name" maxlength="24"
-        class="tin flex-1 min-w-0 bg-ink/60 border border-line rounded px-2 py-1.5 text-sm font-bold text-white focus:outline-none focus:border-gold">
-    </div>`).join('');
-
-  document.querySelectorAll('.tin').forEach(el => el.addEventListener('change', () => {
-    const v = el.value.trim();
-    if(!v){ el.value = state.teams[el.dataset.i][el.dataset.f]; return; }
-    state.teams[el.dataset.i][el.dataset.f] = el.dataset.f === 'tag' ? v.toUpperCase() : v;
-    save(); renderAll();
-  }));
-}
-
-function renderLegend(){
-  document.getElementById('ptsLegend').innerHTML = Object.entries(PLACEMENT).map(([r,p]) => `
-    <li class="flex justify-between items-center">
-      <span class="flex items-center gap-1.5 ${r==='1'?'text-gold font-bold':'text-slate-300'}">${r==='1'?ICONS.trophy('ico w-3.5 h-3.5'):''}#${r} Place</span>
-      <span class="font-mono font-extrabold ${r==='1'?'text-gold':'text-white'}">${p} pts</span>
-    </li>`).join('');
-}
-
-function renderAdmin(){ renderMatchTabs(); renderTeamCards(); }
-function renderAll(){
-  renderSectionIcons(); renderMapChips(); renderStandings(); renderMVP(); renderMatchCards();
-  renderSavedAt(); renderAdmin(); renderTeamEditor(); renderLegend();
-}
-
-/* ============================================================
-   ACTIONS
-============================================================ */
-document.getElementById('resultForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const entry = {}, ranks = [];
-  let missing = false;
-  const nameEdits = [];
-
-  document.querySelectorAll('#teamCards .team-card').forEach(card => {
-    const rank = parseInt(card.querySelector('.t-rank').value, 10);
-    if(!rank){ missing = true; return; }
-    ranks.push(rank);
-    const players = {};
-    card.querySelectorAll('[data-player]').forEach(row => {
-      const pid = row.dataset.player;
-      const name = row.querySelector('.p-name').value.trim();
-      if(name) nameEdits.push([pid, name]);
-      players[pid] = {
-        kills:  Math.max(0, parseInt(row.querySelector('.p-kills').value || 0, 10) || 0),
-        damage: Math.max(0, parseInt(row.querySelector('.p-dmg').value   || 0, 10) || 0),
-      };
-    });
-    entry[card.dataset.team] = { rank, players };
-  });
-
-  if(missing) return toast('⚠ Every team needs a rank position', true);
-  if(new Set(ranks).size !== NUM_TEAMS) return toast('⚠ Each rank #1–#6 must be used once', true);
-
-  // player names are part of the roster, shared across all matches
-  nameEdits.forEach(([pid, name]) => {
-    const t = teamOf(pid);
-    const p = t && t.players.find(x => x.id === pid);
-    if(p) p.name = name;
-  });
-
-  state.results[currentMatch] = entry;
-  save(); renderAll();
-  toast(`✓ Match ${currentMatch} (${MAPS[currentMatch-1]}) saved`);
-});
-
-document.getElementById('btnClearMatch').onclick = () => {
-  if(!state.results[currentMatch]) return toast('Nothing to clear', true);
-  if(!confirm(`Clear all results for Match ${currentMatch} (${MAPS[currentMatch-1]})?`)) return;
-  delete state.results[currentMatch];
-  save(); renderAll(); toast(`Match ${currentMatch} cleared`);
-};
-
-document.getElementById('btnReset').onclick = () => {
-  if(!confirm('Reset ALL match results, team names and player names? This cannot be undone.')) return;
-  state = blankState(); currentMatch = 1; save(); renderAll(); toast('Tournament reset');
-};
-
-document.getElementById('btnMore').onclick = () => { showAllPlayers = !showAllPlayers; renderMVP(); };
-
-/* view switching */
-document.querySelectorAll('.tabbtn').forEach(b => {
-  b.onclick = () => {
-    document.querySelectorAll('.tabbtn').forEach(x => { x.classList.remove('active'); x.classList.add('text-slate-400'); });
-    b.classList.add('active'); b.classList.remove('text-slate-400');
-    const v = b.dataset.view;
-    document.getElementById('view-board').classList.toggle('hidden', v !== 'board');
-    document.getElementById('view-admin').classList.toggle('hidden', v !== 'admin');
-    if(v === 'board'){ renderStandings(); renderMVP(); renderMatchCards(); }
-    window.scrollTo({ top:0, behavior:'smooth' });
-  };
-});
-
-/* export PNG */
-document.getElementById('btnPng').onclick = async () => {
-  const btn = document.getElementById('btnPng'), old = btn.textContent;
-  btn.textContent = 'Rendering…'; btn.disabled = true;
-  document.body.classList.add('exporting');
-  try{
-    const canvas = await html2canvas(document.getElementById('capture'), {
-      backgroundColor: '#0f172a',
-      scale: Math.min(3, (window.devicePixelRatio || 1) * 2),
-      useCORS: true, logging: false
-    });
-    const a = document.createElement('a');
-    a.download = `ddam-cup-standings-${new Date().toISOString().slice(0,10)}.png`;
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-    toast('✓ PNG downloaded');
-  }catch(err){ toast('Export failed — use Printable view', true); }
-  document.body.classList.remove('exporting');
-  btn.textContent = old; btn.disabled = false;
-};
-
-document.getElementById('btnPrint').onclick = () => window.print();
-
-document.getElementById('btnCopy').onclick = async () => {
-  const teams = computeStandings(), players = computePlayers().slice(0, 5);
-  const txt = ['🏆 DDAM CUP — OVERALL STANDINGS', '']
-    .concat(teams.map(r => `${r.rank}. ${r.team.name} — ${r.total} pts (${r.kills} kills, ${r.wwcd} WWCD, ${r.mp} matches)`))
-    .concat(['', '💀 TOP FRAGGERS', ''])
-    .concat(players.map(p => `${p.rank}. ${p.player.name} [${p.team.tag}] — ${p.kills} kills, ${num(p.damage)} dmg${p.rank===1?'  👑 MVP':''}`))
-    .concat(['', `Maps: ${MAPS.map((m,i)=>`M${i+1} ${m}`).join(' / ')}`, `Updated: ${new Date().toLocaleString()}`])
-    .join('\n');
-  try{ await navigator.clipboard.writeText(txt); toast('✓ Copied to clipboard'); }
-  catch(e){ prompt('Copy the standings:', txt); }
-};
-
-/* toast */
-let toastTimer;
-function toast(msg, bad){
-  const wrap = document.getElementById('toast'), el = document.getElementById('toastMsg');
-  el.textContent = msg;
-  el.className = 'px-5 py-3 rounded-xl bg-panel2 border font-display font-bold text-xs uppercase tracking-widest toast-in ' +
-    (bad ? 'border-rose-500/60 text-rose-300' : 'border-gold/50 shadow-gold text-gold');
-  wrap.classList.remove('hidden');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => wrap.classList.add('hidden'), 2600);
-}
-
-renderAll();
-</script>
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>

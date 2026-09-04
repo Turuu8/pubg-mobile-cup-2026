@@ -1,0 +1,107 @@
+  /* ==========================================================
+     BATTLEGROUND BACKDROP
+     Two fixed layers sit behind everything:
+       ::before → dark-gradient-over-photo (the arena)
+       ::after  → radial glows + tactical grid
+     Fixed layers (rather than background-attachment:fixed) keep
+     scrolling smooth on mobile Safari.
+     Swap the photo by editing --bg-photo below. Alternatives that
+     are verified to load and stay dark enough for white text:
+       photo-1470071459604-3b5ec3a7fe05  (misty highlands, Erangel-like)
+       photo-1519669556878-63bdad8a1a49  (masked figure at night)
+       photo-1560253023-3ec5d502959f     (LAN arena, two players)
+       photo-1511512578047-dfb367046420  (dark arcade control room)
+     ========================================================== */
+  :root{
+    --bg-photo: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=2400&q=80');
+  }
+  /* Only <html> may carry an opaque background here. An opaque background on
+     <body> paints AFTER negative-z-index children in the root stacking context,
+     which would hide the ::before backdrop layer entirely. */
+  html{background-color:#0f172a;}
+  body{background:transparent;font-family:'Rajdhani',sans-serif;-webkit-font-smoothing:antialiased;}
+
+  body::before{
+    content:'';position:fixed;inset:0;z-index:-2;
+    background:
+      linear-gradient(rgba(15,23,42,.85), rgba(15,23,42,.92)),
+      var(--bg-photo) center / cover no-repeat;
+    background-color:#0f172a;   /* fallback if the photo never loads */
+  }
+  body::after{
+    content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-image:
+      radial-gradient(1200px 520px at 50% -10%, rgba(245,158,11,.16), transparent 62%),
+      radial-gradient(900px 440px at 92% 4%,  rgba(34,211,238,.12), transparent 62%),
+      radial-gradient(700px 400px at 4% 96%,  rgba(245,158,11,.07), transparent 60%),
+      linear-gradient(rgba(36,53,79,.22) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(36,53,79,.22) 1px, transparent 1px);
+    background-size: auto, auto, auto, 46px 46px, 46px 46px;
+  }
+
+  ::-webkit-scrollbar{height:8px;width:8px}
+  ::-webkit-scrollbar-track{background:#0f172a}
+  ::-webkit-scrollbar-thumb{background:#24354f;border-radius:99px}
+  ::-webkit-scrollbar-thumb:hover{background:#f59e0b}
+
+  /* ---------- glass panels that float over the backdrop ---------- */
+  .glass{
+    background:rgba(17,28,51,.72);
+    -webkit-backdrop-filter:blur(14px) saturate(1.2);
+    backdrop-filter:blur(14px) saturate(1.2);
+    border:1px solid rgba(245,158,11,.22);
+    box-shadow:
+      0 0 0 1px rgba(245,158,11,.06),
+      0 22px 48px -26px rgba(0,0,0,.95),
+      inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .glass-2{ background:rgba(22,35,61,.72); }   /* table headers / inner strips */
+  .glow-gold{ border-color:rgba(245,158,11,.45); box-shadow:0 0 0 1px rgba(245,158,11,.14), 0 0 34px -12px rgba(245,158,11,.5), 0 22px 48px -26px rgba(0,0,0,.95); }
+  .glow-cyan{ border-color:rgba(34,211,238,.40); box-shadow:0 0 0 1px rgba(34,211,238,.12), 0 0 30px -12px rgba(34,211,238,.45), 0 22px 48px -26px rgba(0,0,0,.95); }
+
+  .clip-tag{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+  .row-champ{background:linear-gradient(90deg, rgba(245,158,11,.24), rgba(245,158,11,.07) 45%, transparent);box-shadow:inset 3px 0 0 0 #f59e0b;}
+  .row-2{background:linear-gradient(90deg, rgba(203,213,225,.12), transparent 60%);box-shadow:inset 3px 0 0 0 #cbd5e1;}
+  .row-3{background:linear-gradient(90deg, rgba(180,83,9,.18), transparent 60%);box-shadow:inset 3px 0 0 0 #b45309;}
+
+  @keyframes shine{0%{background-position:-220% 0}100%{background-position:220% 0}}
+  .champ-name{
+    background:linear-gradient(100deg,#fde68a 10%,#f59e0b 30%,#fff7d6 46%,#f59e0b 62%,#fde68a 90%);
+    background-size:220% auto;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:shine 4.5s linear infinite;
+  }
+  @keyframes pulseGold{0%,100%{box-shadow:0 0 0 1px rgba(245,158,11,.45),0 0 30px -10px rgba(245,158,11,.55)}50%{box-shadow:0 0 0 1px rgba(245,158,11,.85),0 0 46px -8px rgba(245,158,11,.8)}}
+  .mvp-card{animation:pulseGold 3s ease-in-out infinite}
+  .ico{width:1em;height:1em;display:inline-block;vertical-align:-.14em;flex:none}
+  .ico-trophy{filter:drop-shadow(0 0 6px rgba(245,158,11,.55))}
+
+  /* ---------- export mode ----------
+     html2canvas cannot rasterize backdrop-filter or background-clip:text,
+     so freeze those into solid equivalents while the PNG is being drawn. */
+  .exporting .champ-name{background:none !important;-webkit-text-fill-color:#f59e0b !important;color:#f59e0b !important;animation:none !important}
+  .exporting .mvp-card{animation:none}
+  .exporting .glass{background:#111c33 !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+  .exporting .glass-2{background:#16233d !important}
+
+  input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  input[type=number]{-moz-appearance:textfield}
+  .tabbtn.active{background:#f59e0b;color:#0f172a;box-shadow:0 0 24px -6px rgba(245,158,11,.8)}
+  .toast-in{animation:tin .25s ease-out}
+  @keyframes tin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  @media (prefers-reduced-motion: reduce){
+    .champ-name,.mvp-card,.toast-in{animation:none}
+  }
+
+  @media print{
+    body::before, body::after{display:none !important}
+    body{background:#fff}
+    .no-print{display:none !important}
+    .print-plain, .print-plain *{color:#000 !important;background:#fff !important;box-shadow:none !important;
+      -webkit-text-fill-color:#000 !important; animation:none !important; border-color:#999 !important;
+      -webkit-backdrop-filter:none !important; backdrop-filter:none !important; filter:none !important}
+    .print-plain table{border-collapse:collapse}
+    .print-plain th,.print-plain td{border:1px solid #999 !important}
+    footer{background:#fff !important;border-top:1px solid #999 !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
+    footer *{color:#000 !important;-webkit-text-fill-color:#000 !important;filter:none !important}
+  }
