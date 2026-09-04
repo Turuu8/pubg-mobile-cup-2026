@@ -41,4 +41,4 @@ No complex backend setup or node dependencies are required. This application run
 ### Installation & Local Run
 1. Clone or download this repository:
    ```bash
-   git clone [https://github.com/turuu8/pubg-mobile-cup-2026.git](https://github.com/Turuu8/pubg-mobile-cup-2026)
+   git clone https://github.com/Turuu8/pubg-mobile-cup-2026.git
