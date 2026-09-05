@@ -10,6 +10,7 @@ import { PLACEMENT, MAPS, NUM_MATCHES, NUM_TEAMS, TOURNAMENT_ID } from './config
 import { createStore, blankState, MODE } from './store.js';
 import { computeStandings, computePlayers, matchTeamStats } from './scoring.js';
 import { ICONS, rankMedal } from './icons.js';
+import { enhanceSelects, setSelectState } from './select.js';
 import { isConfigured, missingKeys, isLive } from './firebase.js';
 
 /* ---------- view state (not persisted) ---------- */
@@ -277,9 +278,11 @@ function renderTeamCards() {
       <div class="px-4 py-3 glass-2 border-b border-gold/20 flex items-center gap-2.5 flex-wrap">
         <span class="font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-ink/70 border border-line text-cyan">${esc(t.tag)}</span>
         <span class="font-display font-bold text-sm text-white">${esc(t.name)}</span>
-        <select class="t-rank ml-auto bg-ink/70 border border-line rounded-lg px-2.5 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold">
-          <option value="">Rank —</option>${rankOpts}
-        </select>
+        <div class="sel ml-auto">
+          <select class="t-rank select-esports" aria-label="Rank position for ${esc(t.name)}">
+            <option value="">Rank —</option>${rankOpts}
+          </select>
+        </div>
       </div>
       <div class="px-4 pt-3 pb-2 grid grid-cols-[1fr_64px_84px] gap-2 text-[9px] uppercase tracking-[.18em] font-display font-bold text-slate-500">
         <span>Player</span><span class="text-center">Kills</span><span class="text-center">Damage</span>
@@ -298,6 +301,7 @@ function renderTeamCards() {
     el.addEventListener('input', () => { formDirty = true; updateLive(); });
     el.addEventListener('change', () => { formDirty = true; updateLive(); });
   });
+  enhanceSelects(document.getElementById('teamCards'));
   updateLive();
 }
 
@@ -326,7 +330,7 @@ function updateLive() {
     }
     const isDup = rank && counts[rank] > 1;
     if (isDup) dup = true;
-    card.querySelector('.t-rank').classList.toggle('border-rose-500', !!isDup);
+    setSelectState(card.querySelector('.t-rank'), { error: !!isDup, empty: !rank });
   });
 
   $('rankWarn').textContent =

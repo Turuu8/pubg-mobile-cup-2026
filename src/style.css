@@ -83,6 +83,137 @@
   .exporting .glass{background:#111c33 !important;-webkit-backdrop-filter:none !important;backdrop-filter:none !important}
   .exporting .glass-2{background:#16233d !important}
 
+  /* ==========================================================
+     ESPORTS SELECT
+     Native <select> stripped back to the theme: no OS chrome, no
+     system-blue highlight, custom chevron, gold focus glow.
+
+     `color-scheme: dark` is the load-bearing line for the popup —
+     it is what makes macOS/Windows render the native option list
+     dark instead of white. The CSS below styles <option> directly
+     as well, which is what Firefox and Chrome on Windows/Linux use.
+     ========================================================== */
+  .select-esports{
+    -webkit-appearance:none; -moz-appearance:none; appearance:none;
+    color-scheme:dark;
+    background-color:#0f172a;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right .55rem center;
+    background-size:13px 13px;
+    padding-right:1.85rem;
+    border:1px solid #334155;              /* slate-700 */
+    border-radius:.5rem;
+    color:#f1f5f9;
+    cursor:pointer;
+    text-overflow:ellipsis;
+    transition:border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+  }
+  .select-esports:hover{
+    background-color:#16233d;
+    border-color:rgba(245,158,11,.65);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f59e0b' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+  .select-esports:focus,
+  .select-esports:focus-visible{
+    outline:none;
+    border-color:#f59e0b;
+    box-shadow:0 0 0 1px #f59e0b, 0 0 18px -6px rgba(245,158,11,.8);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f59e0b' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  }
+  /* Two classes, so it outranks any single utility that also sets a border. */
+  .select-esports.is-error{
+    border-color:#f43f5e;
+    box-shadow:0 0 0 1px rgba(244,63,94,.55);
+  }
+  /* Unset "Rank —" reads as a placeholder rather than a real value. */
+  .select-esports.is-empty{ color:#64748b; font-weight:600; }
+
+  .select-esports option{
+    background-color:#0f172a;
+    color:#e2e8f0;
+    font-weight:600;
+    padding:.35rem .5rem;
+  }
+  .select-esports option:checked,
+  .select-esports option[selected]{
+    background:#f59e0b;
+    color:#0f172a;
+    font-weight:800;
+  }
+  .select-esports option:disabled,
+  .select-esports option[value=""]{ color:#64748b; }
+
+  /* ---------- custom listbox (see src/select.js) ---------- */
+  .sel{ position:relative; display:inline-block; }
+  .sel-native{ position:absolute; opacity:0; pointer-events:none; width:100%; height:100%; left:0; top:0; }
+
+  .sel-trigger{
+    display:inline-flex; align-items:center; gap:.5rem;
+    width:100%; min-width:7.5rem;
+    padding:.375rem .625rem;
+    background:#0f172a;
+    border:1px solid #334155;                 /* slate-700 */
+    border-radius:.5rem;
+    color:#f1f5f9;
+    font-family:'Rajdhani',sans-serif; font-size:.75rem; font-weight:700; line-height:1.25rem;
+    text-align:left; cursor:pointer;
+    transition:border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+  }
+  .sel-trigger .sel-label{ flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .sel-trigger .sel-chevron{
+    width:13px; height:13px; flex:none;
+    background:currentColor;
+    color:#94a3b8;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center/contain no-repeat;
+    transition:color .15s ease, transform .18s ease;
+  }
+  .sel-trigger:hover{ background:#16233d; border-color:rgba(245,158,11,.65); }
+  .sel-trigger:hover .sel-chevron{ color:#f59e0b; }
+  .sel-trigger:focus-visible,
+  .sel-trigger.is-open{
+    outline:none;
+    border-color:#f59e0b;
+    box-shadow:0 0 0 1px #f59e0b, 0 0 18px -6px rgba(245,158,11,.8);
+  }
+  .sel-trigger.is-open .sel-chevron{ color:#f59e0b; transform:rotate(180deg); }
+  .sel-trigger.is-error{ border-color:#f43f5e; box-shadow:0 0 0 1px rgba(244,63,94,.55); }
+  .sel-trigger.is-empty .sel-label{ color:#64748b; }
+
+  .sel-pop{
+    position:fixed; z-index:9999;
+    padding:.3rem;
+    background:#111c33;
+    border:1px solid rgba(245,158,11,.45);
+    border-radius:.65rem;
+    box-shadow:0 0 0 1px rgba(245,158,11,.12), 0 26px 50px -18px rgba(0,0,0,.95), 0 0 34px -14px rgba(245,158,11,.5);
+    overflow-y:auto; overscroll-behavior:contain;
+    animation:selPop .12s ease-out;
+  }
+  @keyframes selPop{ from{ opacity:0; transform:translateY(-4px) } to{ opacity:1; transform:none } }
+
+  .sel-opt{
+    display:flex; align-items:center; gap:.5rem;
+    padding:.45rem .55rem;
+    border-radius:.4rem;
+    font-family:'Rajdhani',sans-serif; font-size:.8rem; font-weight:600;
+    color:#e2e8f0; cursor:pointer; white-space:nowrap;
+  }
+  .sel-opt .sel-check{ width:.9rem; flex:none; color:#f59e0b; opacity:0; font-weight:800; }
+  .sel-opt.is-selected{ color:#fbbf24; font-weight:800; }
+  .sel-opt.is-selected .sel-check{ opacity:1; }
+  .sel-opt.is-placeholder{ color:#64748b; }
+  /* Keyboard/pointer highlight — gold, never the OS accent colour. */
+  .sel-opt.is-active{ background:linear-gradient(90deg, rgba(245,158,11,.28), rgba(245,158,11,.10)); color:#fff; }
+  .sel-opt.is-active.is-selected{ color:#fde68a; }
+
+  @media (prefers-reduced-motion: reduce){
+    .sel-pop{ animation:none }
+    .sel-trigger .sel-chevron{ transition:none }
+  }
+  @media print{ .sel-pop{ display:none !important } }
+
   input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   input[type=number]{-moz-appearance:textfield}
   .tabbtn.active{background:#f59e0b;color:#0f172a;box-shadow:0 0 24px -6px rgba(245,158,11,.8)}
