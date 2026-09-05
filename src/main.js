@@ -17,8 +17,14 @@ import { isConfigured, missingKeys, isLive } from './firebase.js';
 let state = blankState();
 let currentMatch = 1;
 let showAllPlayers = false;
-let formDirty = false;      // organiser has unsaved edits in the admin form
+let formDirty = false;      // organiser has unsaved SCORE edits in the admin form
 let pendingRemote = false;  // a remote update arrived while they were typing
+/* Roster edits (team name/tag, player name) save themselves the moment they are
+   changed — they are not scores, so they must never wait on a rank or a score.
+   While one of those writes round-trips we patch the admin form in place instead
+   of re-rendering it, so a half-typed kill/damage column is never wiped. */
+let rosterSaving = false;
+let lastSelfPublish = null; // `updated` stamp of our own last write, to ignore its echo
 
 const $  = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -34,6 +40,13 @@ const firstUnplayedMatch = () => {
 ============================================================ */
 const store = createStore({
   onState(next, { fromRemote }) {
+    // Our own roster write coming back: refresh the read-only halves only.
+    if (rosterSaving || (fromRemote && next.updated && next.updated === lastSelfPublish)) {
+      state = next;
+      renderBoard();
+      syncTeamCardHeaders();
+      return;
+    }
     // Never stomp a half-typed match result with an incoming snapshot.
     if (fromRemote && formDirty) {
       pendingRemote = true;
@@ -276,8 +289,8 @@ function renderTeamCards() {
 
     return `<div class="team-card rounded-2xl glass overflow-hidden" data-team="${t.id}">
       <div class="px-4 py-3 glass-2 border-b border-gold/20 flex items-center gap-2.5 flex-wrap">
-        <span class="font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-ink/70 border border-line text-cyan">${esc(t.tag)}</span>
-        <span class="font-display font-bold text-sm text-white">${esc(t.name)}</span>
+        <span class="tc-tag font-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-ink/70 border border-line text-cyan">${esc(t.tag)}</span>
+        <span class="tc-name font-display font-bold text-sm text-white">${esc(t.name)}</span>
         <div class="sel ml-auto">
           <select class="t-rank select-esports" aria-label="Rank position for ${esc(t.name)}">
             <option value="">Rank —</option>${rankOpts}
@@ -297,12 +310,73 @@ function renderTeamCards() {
     </div>`;
   }).join('');
 
-  document.querySelectorAll('#teamCards input, #teamCards select').forEach(el => {
+  /* Scores + rank: these are what "Add / Update Match Result" publishes, so they
+     mark the form dirty and wait for the rank validation. */
+  document.querySelectorAll('#teamCards .t-rank, #teamCards .p-kills, #teamCards .p-dmg').forEach(el => {
     el.addEventListener('input', () => { formDirty = true; updateLive(); });
     el.addEventListener('change', () => { formDirty = true; updateLive(); });
   });
+
+  /* Player names: roster data, not match data. Saved on blur/Enter on their own,
+     with no rank or score required. */
+  document.querySelectorAll('#teamCards .p-name').forEach(el => {
+    const pid = el.closest('[data-player]').dataset.player;
+    el.addEventListener('change', () => savePlayerName(pid, el));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+  });
+
   enhanceSelects(document.getElementById('teamCards'));
   updateLive();
+}
+
+/* Repaint just the team-card headers after a roster write, so the open admin
+   form keeps every value the organiser has typed but not yet published. */
+function syncTeamCardHeaders() {
+  document.querySelectorAll('#teamCards .team-card').forEach(card => {
+    const t = state.teams.find(x => x.id === card.dataset.team);
+    if (!t) return;
+    const tag = card.querySelector('.tc-tag'), name = card.querySelector('.tc-name');
+    if (tag)  tag.textContent  = t.tag;
+    if (name) name.textContent = t.name;
+    const sel = card.querySelector('.t-rank');
+    if (sel) sel.setAttribute('aria-label', `Rank position for ${t.name}`);
+  });
+}
+
+/* ============================================================
+   ROSTER SAVES — team name / tag / player name
+   Independent of scores: no rank, no kills, no damage required.
+   `mutate` edits a clone of the current state; the write goes to Firebase
+   immediately and every viewer's board updates.
+============================================================ */
+async function saveRoster(mutate, okMsg) {
+  const next = structuredClone(state);
+  if (mutate(next) === false) return;   // nothing actually changed
+  rosterSaving = true;
+  let res;
+  try {
+    res = await store.publish(next);
+  } finally {
+    rosterSaving = false;
+  }
+  lastSelfPublish = res.updated || null;
+  renderTeamEditorValues();
+  if (!res.ok)          toast('⚠ Saved on this device only — Firebase write failed', true);
+  else if (res.local)   toast(`${okMsg} — saved on this device only`);
+  else if (okMsg)       toast(`✓ ${okMsg}`);
+}
+
+async function savePlayerName(pid, el) {
+  const t = teamOf(pid);
+  const p = t && t.players.find(x => x.id === pid);
+  if (!p) return;
+  const v = el.value.trim();
+  if (!v) { el.value = p.name; return; }        // blank is not a name — revert
+  if (v === p.name) return;
+  await saveRoster(nx => {
+    const nt = nx.teams.find(x => x.players.some(y => y.id === pid));
+    nt.players.find(y => y.id === pid).name = v;
+  }, 'Player name saved');
 }
 
 /* Live team-kill aggregation + duplicate-rank check as the organiser types. */
@@ -346,14 +420,27 @@ function renderTeamEditor() {
         class="tin flex-1 min-w-0 bg-ink/60 border border-line rounded px-2 py-1.5 text-sm font-bold text-white focus:outline-none focus:border-gold">
     </div>`).join('');
 
-  document.querySelectorAll('.tin').forEach(el => el.addEventListener('change', async () => {
-    const v = el.value.trim();
-    if (!v) { el.value = state.teams[el.dataset.i][el.dataset.f]; return; }
-    const next = structuredClone(state);
-    next.teams[el.dataset.i][el.dataset.f] = el.dataset.f === 'tag' ? v.toUpperCase() : v;
-    const res = await store.publish(next);
-    if (!res.ok) toast('⚠ Saved locally — Firebase write failed', true);
-  }));
+  /* Team name / tag save themselves on blur or Enter — no rank, no scores. */
+  document.querySelectorAll('.tin').forEach(el => {
+    el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
+    el.addEventListener('change', () => {
+      const i = +el.dataset.i, f = el.dataset.f;
+      const v = f === 'tag' ? el.value.trim().toUpperCase() : el.value.trim();
+      if (!v) { el.value = state.teams[i][f]; return; }   // blank is not a name — revert
+      if (v === state.teams[i][f]) { el.value = v; return; }
+      el.value = v;
+      saveRoster(nx => { nx.teams[i][f] = v; }, f === 'tag' ? 'Team tag saved' : 'Team name saved');
+    });
+  });
+}
+
+/* Push the stored roster back into the editor inputs without rebuilding them,
+   so the field the organiser is tabbing through keeps focus. */
+function renderTeamEditorValues() {
+  document.querySelectorAll('#teamEditor .tin').forEach(el => {
+    const t = state.teams[+el.dataset.i];
+    if (t && document.activeElement !== el) el.value = t[el.dataset.f];
+  });
 }
 
 function renderLegend() {
@@ -411,6 +498,7 @@ $('resultForm').addEventListener('submit', async e => {
   const label = btn && btn.textContent;
   if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
   const res = await store.publish(next);
+  lastSelfPublish = res.updated || null;
   if (btn) { btn.disabled = false; btn.textContent = label; }
 
   toast(res.ok && !res.local
@@ -424,15 +512,21 @@ $('btnClearMatch').onclick = async () => {
   const next = structuredClone(state);
   delete next.results[currentMatch];
   formDirty = false;
-  await store.publish(next);
+  const res = await store.publish(next);
+  lastSelfPublish = res.updated || null;
   toast(`Match ${currentMatch} cleared`);
 };
 
+/* Scores only. Team names, tags and player names are the roster — the organiser
+   spent time typing them, and a score reset must not throw them away. */
 $('btnReset').onclick = async () => {
-  if (!confirm('Reset ALL match results, team names and player names for every viewer? This cannot be undone.')) return;
-  currentMatch = 1; formDirty = false;
-  await store.publish(blankState());
-  toast('Tournament reset');
+  if (!confirm('Reset every match result — ranks, kills and damage — for all 3 matches?\n\nTeam names, team tags and player names are KEPT. This cannot be undone.')) return;
+  const next = structuredClone(state);
+  next.results = {};
+  currentMatch = 1; formDirty = false; pendingRemote = false;
+  const res = await store.publish(next);
+  lastSelfPublish = res.updated || null;
+  toast(res.ok && !res.local ? '✓ Scores reset — rosters kept' : 'Scores reset on this device only', !res.ok);
 };
 
 $('btnMore').onclick = () => { showAllPlayers = !showAllPlayers; renderMVP(); };

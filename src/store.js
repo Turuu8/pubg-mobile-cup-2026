@@ -89,19 +89,22 @@ export function createStore({ onState, onMode }) {
   }
 
   /* Write-through: cache immediately so the organiser's own screen never
-     appears to lose an edit, then push to Firebase. */
+     appears to lose an edit, then push to Firebase. Returns the `updated`
+     stamp that was written so a caller can recognise its own echo coming
+     back through the subscription and not mistake it for another organiser. */
   async function publish(next) {
     state = { ...next, updated: new Date().toISOString() };
+    const updated = state.updated;
     writeCache(state);
     onState(state, { fromRemote: false });
-    if (!fb.isLive()) return { ok: true, local: true };
+    if (!fb.isLive()) return { ok: true, local: true, updated };
     try {
       await fb.publish(state);
-      return { ok: true, local: false };
+      return { ok: true, local: false, updated };
     } catch (err) {
       console.error('[store] publish failed:', err);
       setMode(MODE.LOCAL);
-      return { ok: false, local: true, error: err };
+      return { ok: false, local: true, updated, error: err };
     }
   }
 
