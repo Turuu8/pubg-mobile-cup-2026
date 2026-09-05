@@ -9,8 +9,8 @@ export const NUM_TEAMS   = 6;
 export const SQUAD_SIZE  = 4;
 
 export const TEAM_SEED = [
-  ['Team Alpha','ALP'], ['Team Bravo','BRV'], ['Team Charlie','CHR'],
-  ['Team Delta','DLT'], ['Team Echo','ECH'],  ['Team Foxtrot','FOX'],
+  ['Team Gegeenee','ALP'], ['Team Ganaa','BRV'], ['Team Garidaa','CHR'],
+  ['Team Amaraa','DLT'], ['Team Bery','ECH'],  ['Team Bagaa','FOX'],
 ];
 
 /* Which board this client reads and writes. Change VITE_TOURNAMENT_ID to run a
